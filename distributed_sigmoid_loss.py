@@ -15,6 +15,10 @@ class DDPSigmoidLoss(nn.Module):
         self.sigmoid_loss = nn.LogSigmoid()
 
     def forward(self, image_embeddings, text_embeddings):
+        # image_embeddings: (gpu_batch_size, emb_dim)
+        # text_embeddings: (world_size * gpu_batch_size, emb_dim)
+        # All embeddings as assumes to be L2 normalized
+
         def compute_device_loss(zimg, ztxt, same_device):
             t = self.t_prime.exp()
             logits = zimg @ ztxt.T * t + self.bias
@@ -27,9 +31,6 @@ class DDPSigmoidLoss(nn.Module):
 
             loss = -self.sigmoid_loss(labels * logits)
             return loss.sum()
-
-        image_embeddings = F.normalize(image_embeddings)
-        text_embeddings = F.normalize(text_embeddings)
 
         all_text_embeddings = dist_nn.all_gather(text_embeddings)
 
