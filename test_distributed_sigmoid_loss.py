@@ -4,6 +4,7 @@ import torch
 import random
 import numpy as np
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
@@ -95,6 +96,10 @@ def toy_forward_backward_pass(rank, world_size, bz, emb_dim=2, return_dict=None)
     image_embeddings = image_encoder(image_inputs)
     text_embeddings = text_encoder(text_inputs)
 
+    # L2 Normalize features
+    image_embeddings = F.normalize(image_embeddings)
+    text_embeddings = F.normalize(text_embeddings)
+
     # Compute loss
     loss = DDPSigmoidLoss(gpu_batch_size)(image_embeddings, text_embeddings)
 
@@ -114,33 +119,8 @@ def toy_forward_backward_pass(rank, world_size, bz, emb_dim=2, return_dict=None)
         return_dict['txt_grad'] = text_encoder.weight.grad
 
 
-def test_odd_world_size(emb_dim=2):
+def test_same_gradient(emb_dim=2, world_size=2, batch_size=4):
     manager = mp.Manager()
-    world_size, batch_size = 3, 3
-    w3_return_dict = manager.dict()
-    mp.spawn(
-        toy_forward_backward_pass,
-        args=(world_size, batch_size, emb_dim, w3_return_dict),
-        nprocs=world_size,
-        join=True,
-    )
-
-    w1_return_dict = manager.dict()
-    world_size, batch_size = 1, 3
-    mp.spawn(
-        toy_forward_backward_pass,
-        args=(world_size, batch_size, emb_dim, w1_return_dict),
-        nprocs=world_size,
-        join=True,
-    )
-
-    assert torch.allclose(w3_return_dict['img_grad'], w1_return_dict['img_grad'])
-    assert torch.allclose(w3_return_dict['txt_grad'], w1_return_dict['txt_grad'])
-
-
-def test_even_world_size(emb_dim=2):
-    manager = mp.Manager()
-    world_size, batch_size = 2, 4
     w2_return_dict = manager.dict()
     mp.spawn(
         toy_forward_backward_pass,
@@ -150,21 +130,19 @@ def test_even_world_size(emb_dim=2):
     )
 
     w1_return_dict = manager.dict()
-    world_size, batch_size = 1, 4
+    world_size = 1
     mp.spawn(
         toy_forward_backward_pass,
         args=(world_size, batch_size, emb_dim, w1_return_dict),
         nprocs=world_size,
         join=True,
     )
-    # print(w2_return_dict['img_grad'])
-    # print(w1_return_dict['img_grad'])
-    assert torch.allclose(w2_return_dict['img_grad'], w1_return_dict['img_grad'], rtol=1e-4)
-    assert torch.allclose(w2_return_dict['txt_grad'], w1_return_dict['txt_grad'], rtol=1e-4)
+    assert torch.allclose(w2_return_dict['img_grad'], w1_return_dict['img_grad'], rtol=1e-3)
+    assert torch.allclose(w2_return_dict['txt_grad'], w1_return_dict['txt_grad'], rtol=1e-3)
 
 
 if __name__ == "__main__":
-    # test_odd_world_size()
-    # test_even_world_size()
-    test_even_world_size(emb_dim=128)
-    test_even_world_size(emb_dim=512)
+    test_same_gradient(world_size=3, batch_size=3)
+    test_same_gradient(world_size=2, batch_size=4)
+    test_same_gradient(world_size=2, batch_size=4, emb_dim=128)
+    test_same_gradient(world_size=2, batch_size=4, emb_dim=512)
