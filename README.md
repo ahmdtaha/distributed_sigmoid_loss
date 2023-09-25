@@ -23,8 +23,13 @@ While helpful, this pseudo implementation assumes a single GPU. Yet, Vision-Lang
 
 - I am currently looking for people to review this code.
 - Credit is due for [KeremTurgutlu](https://gist.github.com/KeremTurgutlu) as I am borrowing some of [his code](https://gist.github.com/KeremTurgutlu/4a6f7078dc62f292c85b9903197c75f7)
+- [Ross Wightman](https://github.com/rwightman) released [his distributed implementation](https://github.com/mlfoundations/open_clip/pull/634) for Sigmoid loss which makes this repos absolute :)
+- There are differences between Wightman's implementation and mine in terms of (1) communication between GPUs, (2) where the loss parameters (temperature and bias) are stored.
+- I plan to both maintain this repos and publish tests to compare Wightman's implementation and mine.
 
 ## Release History
 
 - 1.0.0
   - First code commit on 23 Sep 2023
+  - Fix t_prime initialize, i.e., set t` = log(10) on 25 Sep 2023
+  - Clean Code a bit (e.g., L2 Normalize outside the loss function)
