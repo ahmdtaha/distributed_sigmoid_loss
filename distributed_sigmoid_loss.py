@@ -8,7 +8,7 @@ import torch.distributed.nn.functional as dist_nn
 class DDPSigmoidLoss(nn.Module):
     def __init__(self, gpu_batch_size) -> None:
         super().__init__()
-        self.t_prime = nn.Parameter(torch.tensor(np.log(1 / 0.07)))  # log 10
+        self.t_prime = nn.Parameter(torch.tensor(np.log(10)))  # log 10
         self.bias = nn.Parameter(torch.tensor(-10.0))
 
         self.gpu_batch_size = gpu_batch_size
