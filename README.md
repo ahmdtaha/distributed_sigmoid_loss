@@ -30,6 +30,6 @@ While helpful, this pseudo implementation assumes a single GPU. Yet, Vision-Lang
 ## Release History
 
 - 1.0.0
-  - First code commit on 23 Sep 2023
-  - Fix t_prime initialize, i.e., set t` = log(10) on 25 Sep 2023
-  - Clean Code a bit (e.g., L2 Normalize outside the loss function)
+  - 23 Sep 2023: First code commit
+  - 25 Sep 2023: Fix t_prime initialize, i.e., set t` = log(10); Clean Code a bit (e.g., L2 Normalize outside the loss function)
+  - 26 Sep 2023: Add Ross Wightman implementation to this repos for verification purpose.
